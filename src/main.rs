@@ -6,7 +6,10 @@ use clearscreen::clear;
 const SQLITE_FILENAME:&str = "db.sqlite";
 const QUERY_INITIALIZE_TABLES:&str = "CREATE TABLE IF NOT EXISTS tasks (id INTEGER PRIMARY KEY, description TEXT NOT NULL, done INTEGER DEFAULT 0);";
 const QUERY_GET_TODOS:&str = "SELECT * FROM tasks";
-const
+const QUERY_ALTER_TODO:&str = "UPDATE tasks SET done = CASE WHEN done = 0 THEN 1 ELSE 0 END WHERE id = ?;";
+const QUERY_DELETE_WHERE_ID : &str = "DELETE FROM tasks WHERE id= ?";
+const QUERY_DELETE_WHERE_DESC : &str ="DELETE FROM tasks WHERE description= ?;";
+const QUERY_INSERT_VALUE: &str = "INSERT INTO tasks (description) VALUES (?);";
 #[derive(Debug)]
 struct ToDo {
     id: i32,
@@ -34,17 +37,38 @@ async fn main() {
         let list = get_todos(&mut conn).await.expect("Failed to obtain db content from table tasks");
         println!("Terminal-Todo\n");
         print_todos(list, show_done);
-        println!("- Type the task id you want to mark as done.");
+        println!("- Type the task id you want to mark as done or undone.");
         println!("- Type a description to create a new task.");
         println!("- Type \"/done\" to show done tasks.");
         println!("- Type \"/delete\" to delete a task with a given id.");
         let mut input = String::default();
 
         stdin().read_line(&mut input).expect("Failed to get stdin");
-        let content= input.as_str();
+        let content= input.trim();
         match input.trim().parse::<i32>() {
             Ok(id) => {
-
+                query(QUERY_ALTER_TODO).bind(id).execute(&mut conn).await.expect("Error executing the query");
+            }
+            Err(_) => {
+                match content {
+                    "/done" => {show_done = !show_done;}
+                    "/delete" => {
+                        input = String::default();
+                        println!("Input the id or description of the task you want to delete: ");
+                        stdin().read_line(&mut input).expect("Failed to get stdin");
+                        match input.trim().parse::<i32>() {
+                            Ok(id) => {
+                                query(QUERY_DELETE_WHERE_ID).bind(id).execute(&mut conn).await.expect("Failed to execute query");
+                            }
+                            Err(_) => {
+                                query(QUERY_DELETE_WHERE_DESC).bind(input.trim()).execute(&mut conn).await.expect("Failed to execute query");
+                            }
+                        }
+                    }
+                    content => {
+                        query(QUERY_INSERT_VALUE).bind(content).execute(&mut conn).await.expect("Failed to execute query");
+                    }
+                }
             }
         }
     }
