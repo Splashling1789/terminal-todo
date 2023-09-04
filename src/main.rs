@@ -1,9 +1,13 @@
 use sqlx::{Connection, Error, query, Row, SqliteConnection};
 use sqlx::sqlite::SqliteQueryResult;
+use std::io::stdin;
+use clearscreen::clear;
 
 const SQLITE_FILENAME:&str = "db.sqlite";
 const QUERY_INITIALIZE_TABLES:&str = "CREATE TABLE IF NOT EXISTS tasks (id INTEGER PRIMARY KEY, description TEXT NOT NULL, done INTEGER DEFAULT 0);";
 const QUERY_GET_TODOS:&str = "SELECT * FROM tasks";
+const
+#[derive(Debug)]
 struct ToDo {
     id: i32,
     description: String,
@@ -24,7 +28,27 @@ async fn main() {
             println!("Error: {e}");
         }
     }
-    print_todos(get_todos(&mut conn).await.expect("Err"), false);
+    let mut show_done = false;
+    loop {
+        clear();
+        let list = get_todos(&mut conn).await.expect("Failed to obtain db content from table tasks");
+        println!("Terminal-Todo\n");
+        print_todos(list, show_done);
+        println!("- Type the task id you want to mark as done.");
+        println!("- Type a description to create a new task.");
+        println!("- Type \"/done\" to show done tasks.");
+        println!("- Type \"/delete\" to delete a task with a given id.");
+        let mut input = String::default();
+
+        stdin().read_line(&mut input).expect("Failed to get stdin");
+        let content= input.as_str();
+        match input.trim().parse::<i32>() {
+            Ok(id) => {
+
+            }
+        }
+    }
+
 }
 
 async fn manage_connection() -> Option<SqliteConnection> {
@@ -65,10 +89,10 @@ async fn get_todos(conn: &mut SqliteConnection) -> Option<Vec<ToDo>> {
     }
 }
 
-fn print_todos(list: Vec<ToDo>, print_undone: bool) {
-    if !print_undone {
+fn print_todos(list: Vec<ToDo>, print_done: bool) {
+    if !print_done {
         for t in list {
-            if t.done {
+            if !t.done {
                 println!("[O#{}] {}", t.id, t.description);
             }
         }
