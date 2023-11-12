@@ -37,8 +37,8 @@ async fn main() {
         let list = get_todos(&mut conn).await.expect("Failed to obtain db content from table tasks");
         println!("Terminal-Todo\n");
         print_todos(list, show_done);
-        println!("- Type the task id you want to mark as done or undone.");
         println!("- Type a description to create a new task.");
+        println!("- Type the task id you want to mark as done or undone.");
         println!("- Type \"/done\" to alternate showing or not showing done tasks.");
         println!("- Type \"/delete\" to delete a task with a given id.");
         let mut input = String::default();
