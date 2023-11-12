@@ -50,24 +50,27 @@ async fn main() {
                 query(QUERY_ALTER_TODO).bind(id).execute(&mut conn).await.expect("Error executing the query");
             }
             Err(_) => {
-                match content {
-                    "/done" => {show_done = !show_done;}
-                    "/delete" => {
-                        input = String::default();
-                        println!("Input the id or description of the task you want to delete: ");
-                        stdin().read_line(&mut input).expect("Failed to get stdin");
-                        match input.trim().parse::<i32>() {
-                            Ok(id) => {
-                                query(QUERY_DELETE_WHERE_ID).bind(id).execute(&mut conn).await.expect("Failed to execute query");
-                            }
-                            Err(_) => {
-                                query(QUERY_DELETE_WHERE_DESC).bind(input.trim()).execute(&mut conn).await.expect("Failed to execute query");
+                if content.starts_with("/") {
+                    match content {
+                        "/done" => { show_done = !show_done; }
+                        "/delete" => {
+                            input = String::default();
+                            println!("Input the id or description of the task you want to delete: ");
+                            stdin().read_line(&mut input).expect("Failed to get stdin");
+                            match input.trim().parse::<i32>() {
+                                Ok(id) => {
+                                    query(QUERY_DELETE_WHERE_ID).bind(id).execute(&mut conn).await.expect("Failed to execute query");
+                                }
+                                Err(_) => {
+                                    query(QUERY_DELETE_WHERE_DESC).bind(input.trim()).execute(&mut conn).await.expect("Failed to execute query");
+                                }
                             }
                         }
+                        _ => {}
                     }
-                    content => {
-                        query(QUERY_INSERT_VALUE).bind(content).execute(&mut conn).await.expect("Failed to execute query");
-                    }
+                }
+                else {
+                    query(QUERY_INSERT_VALUE).bind(content).execute(&mut conn).await.expect("Failed to execute query");
                 }
             }
         }
